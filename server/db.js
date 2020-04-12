@@ -1,6 +1,6 @@
 var Sequelize = require('sequelize');
-var PersonModel = require('./models/PersonModel');
-var NoteModel = require('./models/NoteModel');
+var PersonEntity = require('./entities/PersonEntity');
+var NoteEntity = require('./entities/NoteEntity');
 
 const Connection = new Sequelize('relay', 'root', 'sharingan2503', {
   dialect: 'mysql',
@@ -8,13 +8,13 @@ const Connection = new Sequelize('relay', 'root', 'sharingan2503', {
   port: '3306'
 });
 
-const Person = Connection.define('person', new PersonModel());
+const Person = Connection.define('person', new PersonEntity());
 
-const Post = Connection.define('post', new NoteModel());
+const Post = Connection.define('post', new NoteEntity());
 
 Person.hasMany(Post);
 Post.belongsTo(Person);
 
-Connection.sync({ force: true });
+Connection.sync({ force: false });
 
 module.exports = Connection;

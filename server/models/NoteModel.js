@@ -1,24 +1,10 @@
-var Sequelize = require('sequelize');
-
 class NoteModel {
-  constructor() {
-    this.id = {
-      type: Sequelize.STRING,
-      allowNull: false,
-      primaryKey: true
-    };
-    this.title = {
-      type: Sequelize.STRING,
-      allowNull: false
-    };
-    this.description = {
-      type: Sequelize.STRING,
-      allowNull: false
-    };
-    this.isCompleted = {
-      type: Sequelize.BOOLEAN,
-      allowNull: false
-    };
+  constructor(id, title, description, isCompleted, person) {
+    this.id = id;
+    this.title = title;
+    this.description = description;
+    this.isCompleted = isCompleted;
+    this.person = person;
   }
 }
 

@@ -1,45 +1,29 @@
-var { GraphQLString, GraphQLList } = require('graphql');
-var NoteEntity = require('./NoteEntity');
+var Sequelize = require('sequelize');
 
-class PersonEntity {
+class PersonModel {
   constructor() {
     this.id = {
-      type: GraphQLString,
-      resolve(person) {
-        return person.id;
-      }
+      type: Sequelize.STRING,
+      allowNull: false,
+      primaryKey: true
     };
     this.firstName = {
-      type: GraphQLString,
-      resolve(person) {
-        return person.firstName;
-      }
+      type: Sequelize.STRING,
+      allowNull: false
     };
     this.lastName = {
-      type: GraphQLString,
-      resolve(person) {
-        return person.lastName;
-      }
+      type: Sequelize.STRING,
+      allowNull: false
     };
     this.email = {
-      type: GraphQLString,
-      resolve(person) {
-        return person.email;
-      }
+      type: Sequelize.STRING,
+      allowNull: false
     };
     this.phoneNumber = {
-      type: GraphQLString,
-      resolve(person) {
-        return person.phoneNumber;
-      }
-    };
-    this.posts = {
-      type: NoteEntity,
-      resolve(person) {
-        return person.getPosts();
-      }
+      type: Sequelize.STRING,
+      allowNull: true
     };
   }
 }
 
-module.exports = PersonEntity;
+module.exports = PersonModel;

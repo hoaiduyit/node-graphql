@@ -8,6 +8,8 @@ var {
 } = require('graphql');
 var uuidv4 = require('uuid/v4');
 var Db = require('./db');
+var PersonModel = require('./models/PersonModel');
+var NoteModel = require('./models/NoteModel');
 
 const Person = new GraphQLObjectType({
   name: 'Person',
@@ -45,7 +47,7 @@ const Person = new GraphQLObjectType({
         }
       },
       posts: {
-        type: new GraphQLList(Post),
+        type: new GraphQLList(Note),
         resolve(person) {
           return person.getPosts();
         }
@@ -54,7 +56,7 @@ const Person = new GraphQLObjectType({
   }
 });
 
-const Post = new GraphQLObjectType({
+const Note = new GraphQLObjectType({
   name: 'Note',
   description: 'This is a note',
   fields: () => {
@@ -109,8 +111,22 @@ const Query = new GraphQLObjectType({
           return Db.models.person.findAll({ where: args });
         }
       },
+      getPerson: {
+        type: Person,
+        args: {
+          id: {
+            type: GraphQLNonNull(GraphQLString)
+          }
+        },
+        resolve(root, args) {
+          if (!args.id) {
+            throw new Error('ID is not exited.');
+          }
+          return Db.models.person.findByPk(args.id);
+        }
+      },
       getPosts: {
-        type: new GraphQLList(Post),
+        type: new GraphQLList(Note),
         args: {
           id: {
             type: GraphQLString
@@ -127,52 +143,59 @@ const Query = new GraphQLObjectType({
   }
 });
 
-const inputPersonArgs = {
-  firstName: {
-    type: new GraphQLNonNull(GraphQLString)
-  },
-  lastName: {
-    type: new GraphQLNonNull(GraphQLString)
-  },
-  email: {
-    type: new GraphQLNonNull(GraphQLString)
-  },
-  phoneNumber: {
-    type: GraphQLString
-  }
-};
-
-const inputPersonData = (args) => ({
-  firstName: args.firstName,
-  lastName: args.lastName,
-  email: args.email.toLowerCase(),
-  phoneNumber: args.phoneNumber
-});
-
 const Mutation = new GraphQLObjectType({
   name: 'Mutation',
   description: 'This is root mutation',
   fields: () => {
     return {
-      addPerson: {
-        type: Person,
-        args: inputPersonArgs,
-        resolve(root, args) {
-          return Db.models.person.create({
-            id: uuidv4(),
-            ...inputPersonData(args)
-          });
-        }
-      },
-      updatePerson: {
+      addUser: {
         type: Person,
         args: {
-          id: { type: new GraphQLNonNull(GraphQLString) },
+          firstName: {
+            type: GraphQLNonNull(GraphQLString)
+          },
+          lastName: {
+            type: GraphQLNonNull(GraphQLString)
+          },
+          email: {
+            type: GraphQLNonNull(GraphQLString)
+          },
+          phoneNumber: {
+            type: GraphQLString
+          }
+        },
+        resolve(root, args) {
+          const person = new PersonModel();
+          person.id = uuidv4();
+          person.firstName = args.firstName;
+          person.lastName = args.lastName;
+          person.email = args.email.toLowerCase();
+          person.phoneNumber = args.phoneNumber;
+          return Db.models.person.create(person);
+        }
+      },
+      updateUser: {
+        type: Person,
+        args: {
+          id: { type: GraphQLNonNull(GraphQLString) },
           input: {
             type: new GraphQLNonNull(
               new GraphQLInputObjectType({
                 name: 'input',
-                fields: inputPersonArgs
+                fields: {
+                  firstName: {
+                    type: GraphQLNonNull(GraphQLString)
+                  },
+                  lastName: {
+                    type: GraphQLNonNull(GraphQLString)
+                  },
+                  email: {
+                    type: GraphQLNonNull(GraphQLString)
+                  },
+                  phoneNumber: {
+                    type: GraphQLString
+                  }
+                }
               })
             )
           }
@@ -181,19 +204,73 @@ const Mutation = new GraphQLObjectType({
           if (!args.id) {
             throw new Error('ID is not exited.');
           }
-          return await Db.models.person
-            .findByPk(args.id)
-            .then((person) => {
+          if (Db.models.person.findByPk(args.id)) {
+            return await Db.models.person
+              .findByPk(args.id)
+              .then((person) => {
+                const p = person;
+                p.set('firstName', args.input.firstName);
+                p.set('lastName', args.input.lastName);
+                p.set('email', args.input.email);
+                p.set('phoneNumber', args.input.phoneNumber);
+                return p.save();
+              })
+              .catch((err) => {
+                throw new Error(err);
+              });
+          }
+          throw new Error('User is not exited.');
+        }
+      },
+      deleteUser: {
+        type: Person,
+        args: {
+          id: {
+            type: GraphQLNonNull(GraphQLString)
+          }
+        },
+        resolve: async (root, args) => {
+          if (!args.id) {
+            throw new Error('ID is not exited.');
+          }
+          if (Db.models.person.findByPk(args.id)) {
+            return await Db.models.person.findByPk(args.id).then((person) => {
               const p = person;
-              p.set('firstName', inputPersonData(args.input).firstName);
-              p.set('lastName', inputPersonData(args.input).lastName);
-              p.set('email', inputPersonData(args.input).email);
-              p.set('phoneNumber', inputPersonData(args.input).phoneNumber);
-              return p.save();
-            })
-            .catch((err) => {
-              throw new Error(err);
+              return p.destroy();
             });
+          }
+        }
+      },
+      addNote: {
+        type: Note,
+        args: {
+          personId: {
+            type: GraphQLNonNull(GraphQLString)
+          },
+          title: {
+            type: GraphQLNonNull(GraphQLString)
+          },
+          description: {
+            type: GraphQLNonNull(GraphQLString)
+          }
+        },
+        resolve: async (root, args) => {
+          const { personId, title, description } = args;
+          if (!personId) {
+            throw new Error('UserId is not exited.');
+          }
+          if (Db.models.person.findByPk(personId)) {
+            return await Db.models.person.findByPk(personId).then((person) => {
+              const note = new NoteModel();
+              note.id = uuidv4();
+              note.title = title;
+              note.description = description;
+              note.isCompleted = false;
+
+              return person.createPost(note);
+            });
+          }
+          throw new Error('User is not exited.');
         }
       }
     };
