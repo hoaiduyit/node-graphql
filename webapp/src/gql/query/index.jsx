@@ -1,7 +1,9 @@
 import getPeople from './getPeople';
+import getPerson from './getPerson';
 
 export default {
-  getPeople
+  getPeople,
+  getPerson
 };
 
-export { getPeople };
+export { getPeople, getPerson };

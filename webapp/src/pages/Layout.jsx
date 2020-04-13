@@ -3,6 +3,7 @@ import { BrowserRouter, Switch, Route } from 'react-router-dom';
 import { withApollo } from 'react-apollo';
 
 import HomePage from './Home';
+import AddEditUser from './AddEditUser';
 
 class Layout extends React.Component {
   render() {
@@ -15,6 +16,16 @@ class Layout extends React.Component {
               exact
               path="/"
               render={(props) => <HomePage {...props} {...this.props} />}
+            />
+            <Route
+              exact
+              path="/user/create"
+              render={(props) => <AddEditUser {...props} {...this.props} />}
+            />
+            <Route
+              exact
+              path="/user/edit/:id"
+              render={(props) => <AddEditUser {...props} {...this.props} />}
             />
           </Switch>
         </BrowserRouter>

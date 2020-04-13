@@ -5,6 +5,7 @@ import { Table, Button } from 'antd';
 import { EditOutlined, DeleteOutlined } from '@ant-design/icons';
 
 import { getPeople } from '../gql/query';
+import { deleteUser } from '../gql/mutation';
 
 const Wrapper = styled.div`
   .add-user {
@@ -20,23 +21,61 @@ const ButtonHolder = styled.div`
   }
 `;
 
+const withUsers = graphql(getPeople, {
+  props: ({ data }) => {
+    return data
+      ? {
+          userList: data.getPeople ? data.getPeople : [],
+          loading: data.loading,
+          refetchUserList: () => {
+            return data.refetch();
+          }
+        }
+      : {
+          refetchUserList: () => {}
+        };
+  },
+  options: () => {
+    return {
+      fetchPolicy: 'cache-and-network'
+    };
+  }
+});
+
 class HomePage extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
-      users: props.data.getPeople ? props.data.getPeople : []
+      users: props.userList
     };
   }
 
   static getDerivedStateFromProps(nextProps, prevState) {
-    const { data } = nextProps;
-    if (!data.loading && data.getPeople && data.getPeople !== prevState.users) {
+    const { loading, userList } = nextProps;
+    if (!loading && userList && userList !== prevState.users) {
       return {
-        users: data.getPeople
+        users: userList
       };
     }
     return null;
   }
+
+  handleDeleteUser = (id) => {
+    if (id) {
+      this.props.client
+        .mutate({
+          mutation: deleteUser,
+          variables: {
+            id
+          }
+        })
+        .then(({ data }) => {
+          if (data.deleteUser && data.deleteUser.id) {
+            this.props.refetchUserList();
+          }
+        });
+    }
+  };
 
   renderColumn = () => {
     return [
@@ -61,8 +100,18 @@ class HomePage extends React.Component {
         render: (text, { id }) => {
           return (
             <ButtonHolder className="button-holder">
-              <Button type="primary" shape="circle" icon={<EditOutlined />} />
-              <Button type="danger" shape="circle" icon={<DeleteOutlined />} />
+              <Button
+                type="primary"
+                shape="circle"
+                onClick={() => this.props.history.push(`/user/edit/${id}`)}
+                icon={<EditOutlined />}
+              />
+              <Button
+                type="danger"
+                shape="circle"
+                onClick={() => this.handleDeleteUser(id)}
+                icon={<DeleteOutlined />}
+              />
             </ButtonHolder>
           );
         }
@@ -75,7 +124,12 @@ class HomePage extends React.Component {
     return (
       <Wrapper>
         <div className="add-user">
-          <Button type="primary">Add User</Button>
+          <Button
+            type="primary"
+            onClick={() => this.props.history.push('/user/create')}
+          >
+            Add User
+          </Button>
         </div>
         <Table dataSource={users} columns={this.renderColumn()} rowKey="id" />
       </Wrapper>
@@ -83,4 +137,4 @@ class HomePage extends React.Component {
   }
 }
 
-export default graphql(getPeople)(HomePage);
+export default withUsers(HomePage);
