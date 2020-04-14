@@ -43,23 +43,6 @@ const withUsers = graphql(getPeople, {
 });
 
 class HomePage extends React.Component {
-  constructor(props) {
-    super(props);
-    this.state = {
-      users: props.userList
-    };
-  }
-
-  static getDerivedStateFromProps(nextProps, prevState) {
-    const { loading, userList } = nextProps;
-    if (!loading && userList && userList !== prevState.users) {
-      return {
-        users: userList
-      };
-    }
-    return null;
-  }
-
   handleDeleteUser = (id) => {
     if (id) {
       this.props.client
@@ -120,7 +103,7 @@ class HomePage extends React.Component {
   };
 
   render() {
-    const { users } = this.state;
+    const { userList } = this.props;
     return (
       <Wrapper>
         <div className="add-user">
@@ -131,7 +114,11 @@ class HomePage extends React.Component {
             Add User
           </Button>
         </div>
-        <Table dataSource={users} columns={this.renderColumn()} rowKey="id" />
+        <Table
+          dataSource={userList}
+          columns={this.renderColumn()}
+          rowKey="id"
+        />
       </Wrapper>
     );
   }
